@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coffee & Health Explorer</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Coffee & Health Explorer — interactive analysis of the Global Coffee Health</h1>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="tab1">Correlation</button>
+            <button class="tab-btn" data-tab="tab2">Distribution</button>
+            <!-- <button class="tab-btn" data-tab="tab3">Consumption</button>
+            <button class="tab-btn" data-tab="tab4">Health Benefits</button>
+            <button class="tab-btn" data-tab="tab5">Economic Impact</button>
+            <button class="tab-btn" data-tab="tab6">Sustainability</button> -->
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Tab 1 Content -->
+            <div class="tab-pane active" id="tab1">
+                <!-- Country buttons (top) -->
+                <div id="country-buttons" class="country-buttons"></div>
+
+                <!-- Controls for filters -->
+                <div id="controls" class="controls">
+                    <div class="control-item">
+                        <label>Age Groups</label>
+                        <div class="age-groups">
+                            <label><input type="checkbox" value="<30" checked> &lt;30</label>
+                            <label><input type="checkbox" value="30-44" checked> 30-44</label>
+                            <label><input type="checkbox" value="45-59" checked> 45-59</label>
+                            <label><input type="checkbox" value="60+" checked> 60+</label>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label for="gender-select">Gender</label>
+                        <select id="gender-select">
+                            <option value="All">All</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="control-item">
+                        <label for="occupation-select">Occupation</label>
+                        <select id="occupation-select">
+                                <option value="All">All</option>
+                            </select>
+                    </div>
+                    <div class="control-item">
+                        <label for="tab1-outcome-select">Health Outcome</label>
+                        <select id="tab1-outcome-select">
+                                <option value="Sleep_Hours">Sleep Hours</option>
+                                <option value="BMI">BMI</option>
+                                <option value="Heart_Rate">Heart Rate</option>
+                                <option value="Stress_Level">Stress Level</option>
+                                <option value="Physical_Activity_Hours">Physical Activity Hours</option>
+                            </select>
+                    </div>
+                </div>
+
+                <div class="visualization-grid">
+                    <div class="viz-container">
+                        <svg id="viz1-1"></svg>
+                    </div>
+                    <!-- Tab3 controls moved here: variable selector, threshold slider, occupation -->
+                    <div id="controls-tab3" class="controls" style="width:100%;justify-content:center;">
+                        <div class="control-item">
+                            <label for="ts-variable-select">Variable (trend)</label>
+                            <select id="ts-variable-select">
+                                <option value="Coffee_Intake">Coffee Intake</option>
+                                <option value="Caffeine_mg">Caffeine (mg)</option>
+                                <option value="Sleep_Hours">Sleep Hours</option>
+                                <option value="BMI">BMI</option>
+                                <option value="Heart_Rate">Heart Rate</option>
+                                <option value="Stress_Level">Stress Level</option>
+                                <option value="Physical_Activity_Hours">Physical Activity Hours</option>
+                            </select>
+                        </div>
+                        <div class="control-item">
+                            <label for="ts-link-threshold">Network link threshold</label>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <input id="ts-link-threshold" type="range" min="0" max="1" step="0.01" value="0.2" />
+                                <span id="ts-link-threshold-val" style="min-width:40px;display:inline-block;text-align:center;">0.20</span>
+                            </div>
+                            <small style="display:block;color:#666;margin-top:6px;">Hide links with |corr| below threshold</small>
+                        </div>
+                        <div class="control-item">
+                            <label for="ts-occupation-select">Occupation</label>
+                            <select id="ts-occupation-select">
+                                <option value="All">All</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="viz-container">
+                        <svg id="viz1-2"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <svg id="viz1-3"></svg>
+                    </div>
+                    <!-- <div class="viz-container">
+                        <svg id="viz1-4"></svg>
+                    </div> -->
+                </div>
+            </div>
+
+            <!-- Tab 2 Content -->
+            <div class="tab-pane" id="tab2">
+                <!-- Controls for Tab 2 -->
+                <div id="controls-tab2" class="controls">
+                    <div class="control-item">
+                        <label for="outcome-select">Health Outcome</label>
+                        <select id="outcome-select">
+                            <option value="Sleep_Hours">Sleep Hours</option>
+                            <option value="BMI">BMI</option>
+                            <option value="Heart_Rate">Heart Rate</option>
+                            <option value="Stress_Level">Stress Level</option>
+                        </select>
+                    </div>
+                    <div class="control-item">
+                        <label for="demographic-select">Demographic (boxplots)</label>
+                        <select id="demographic-select">
+                            <option value="Age">Age</option>
+                            <option value="Gender">Gender</option>
+                            <option value="Occupation">Occupation</option>
+                        </select>
+                    </div>
+                    <div class="control-item">
+                        <label for="coffee-level-filter">Coffee Level Filter</label>
+                        <select id="coffee-level-filter">
+                            <option value="All">All</option>
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="visualization-grid">
+                    <!-- Removed viz2-1 per request; make choropleth full width -->
+                    <div class="viz-container full">
+                        <svg id="viz2-2"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <svg id="viz2-3"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <svg id="viz2-4"></svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- <div class="tab-pane" id="tab3">
+                <div class="visualization-grid">
+                    <div class="viz-container">
+                        <svg id="viz3-4"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <svg id="viz3-3"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <svg id="viz3-1"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <svg id="viz3-2"></svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane" id="tab4">
+                <div class="visualization-grid">
+                    <div class="viz-container">
+                        <svg id="viz4-1"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <svg id="viz4-2"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <svg id="viz4-3"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <svg id="viz4-4"></svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane" id="tab5">
+                <div class="visualization-grid">
+                    <div class="viz-container">
+                        <svg id="viz5-1"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <svg id="viz5-2"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <svg id="viz5-3"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <svg id="viz5-4"></svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane" id="tab6">
+                <div class="visualization-grid">
+                    <div class="viz-container">
+                        <svg id="viz6-1"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <svg id="viz6-2"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <svg id="viz6-3"></svg>
+                    </div>
+                    <div class="viz-container">
+                        <svg id="viz6-4"></svg>
+                    </div>
+                </div>
+            </div> -->
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+
+</html>
