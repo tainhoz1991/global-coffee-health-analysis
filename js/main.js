@@ -828,9 +828,71 @@ document.addEventListener('DOMContentLoaded', function() {
                     const line = d3.line().x(d => x(d.ageGroup)).y(d => y(d.v));
 
                     const grp = g.selectAll('.series').data(series).enter().append('g').attr('class', 'series');
-                    grp.append('path').attr('fill', 'none').attr('stroke', d => color(d.key)).attr('stroke-width', 2.2).attr('d', d => line(d.values));
+                    grp.append('path')
+                        .attr('class', 'series-line')
+                        .attr('fill', 'none')
+                        .attr('stroke', d => color(d.key))
+                        .attr('stroke-width', 2.2)
+                        .attr('d', d => line(d.values))
+                        .style('cursor', 'pointer')
+                        .on('mouseover', function(event, d) {
+                            // Fade out all lines
+                            g.selectAll('.series-line').transition().duration(200).style('opacity', 0.1);
+                            // Highlight this line
+                            d3.select(this).transition().duration(200).style('opacity', 1).attr('stroke-width', 3.5);
+                            // Highlight circles of this series
+                            d3.select(this.parentNode).selectAll('circle').transition().duration(200).attr('r', 5).style('opacity', 1);
+                            // Fade other circles
+                            g.selectAll('.series').filter(function() { return this !== d3.select(event.target).node().parentNode; })
+                                .selectAll('circle').transition().duration(200).style('opacity', 0.1);
+                        })
+                        .on('mouseout', function() {
+                            // Restore all lines
+                            g.selectAll('.series-line').transition().duration(200).style('opacity', 1).attr('stroke-width', 2.2);
+                            // Restore all circles
+                            g.selectAll('circle').transition().duration(200).attr('r', 4).style('opacity', 1);
+                        });
 
-                    grp.selectAll('circle').data(d => d.values).enter().append('circle').attr('cx', d => x(d.ageGroup)).attr('cy', d => y(d.v)).attr('r', 4).attr('fill', '#fff').attr('stroke', '#333');
+                    grp.each(function(seriesData) {
+                        const seriesGroup = d3.select(this);
+                        seriesGroup.selectAll('circle')
+                            .data(seriesData.values)
+                            .enter().append('circle')
+                            .attr('cx', d => x(d.ageGroup))
+                            .attr('cy', d => y(d.v))
+                            .attr('r', 4)
+                            .attr('fill', '#fff')
+                            .attr('stroke', '#333')
+                            .style('cursor', 'pointer')
+                            .on('mouseover', function(event, d) {
+                                // Fade out all lines except parent series
+                                g.selectAll('.series-line').transition().duration(200).style('opacity', 0.1);
+                                // Highlight parent line
+                                d3.select(this.parentNode).select('.series-line').transition().duration(200).style('opacity', 1).attr('stroke-width', 3.5);
+                                // Enlarge the circle
+                                d3.select(this).transition().duration(150).attr('r', 6).attr('stroke-width', 2);
+                                // Highlight circles of this series
+                                d3.select(this.parentNode).selectAll('circle').transition().duration(200).style('opacity', 1);
+                                // Fade other circles
+                                g.selectAll('.series').filter(function() { return this !== d3.select(event.target).node().parentNode; })
+                                    .selectAll('circle').transition().duration(200).style('opacity', 0.1);
+                                // Show tooltip with value
+                                tooltip.style('left', (event.pageX + 12) + 'px')
+                                    .style('top', (event.pageY + 12) + 'px')
+                                    .style('opacity', 1)
+                                    .html(`<div class="chart-wrap"><strong>${seriesData.key}</strong><div>Age: ${d.ageGroup}<br/>${variable}: ${d.v.toFixed(2)}</div></div>`);
+                            })
+                            .on('mouseout', function() {
+                                // Restore all lines
+                                g.selectAll('.series-line').transition().duration(200).style('opacity', 1).attr('stroke-width', 2.2);
+                                // Restore circle size
+                                d3.select(this).transition().duration(150).attr('r', 4).attr('stroke-width', 1);
+                                // Restore all circles
+                                g.selectAll('circle').transition().duration(200).style('opacity', 1);
+                                // Hide tooltip
+                                tooltip.style('opacity', 0);
+                            });
+                    });
 
                     // legend
                     const legend = svg.append('g').attr('transform', `translate(${margin.left+width+10},${margin.top})`);
