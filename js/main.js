@@ -651,13 +651,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 function renderNetwork(dataset, selector, threshold = 0.2) {
                     const svg = d3.select(selector);
                     svg.selectAll('*').remove();
-                    const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+                    const margin = { top: 50, right: 20, bottom: 45, left: 20 };
                     const width = 800 - margin.left - margin.right;
                     const height = 400 - margin.top - margin.bottom;
                     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
                     // Title
-                    svg.append('text').attr('class', 'viz-title').attr('x', margin.left + width / 2).attr('y', 14).attr('text-anchor', 'middle').text('Correlation Network (relationships between lifestyle vs Coffee_Intake)');
+                    svg.append('text').attr('class', 'viz-title').attr('x', margin.left + width / 2).attr('y', 18).attr('text-anchor', 'middle').text('Correlation Network (relationships between lifestyle vs Coffee_Intake)');
 
                     const vars = ['Coffee_Intake', 'Caffeine_mg', 'Sleep_Hours', 'BMI', 'Heart_Rate', 'Stress_Level', 'Physical_Activity_Hours'];
 
@@ -697,11 +697,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     const links = pairs.filter(p => Math.abs(p.corr) > 0.05).map(p => Object.assign({}, p, { value: Math.abs(p.corr) }));
 
-                    // force simulation
+                    // force simulation with collision detection and boundary constraints
                     const simulation = d3.forceSimulation(nodes)
                         .force('link', d3.forceLink(links).id(d => d.id).distance(d => 120 - 80 * d.value))
                         .force('charge', d3.forceManyBody().strength(-200))
-                        .force('center', d3.forceCenter(width / 2, height / 2));
+                        .force('center', d3.forceCenter(width / 2, height / 2))
+                        .force('collision', d3.forceCollide().radius(d => sizeScale(corrWithCoffee[d.id] || 0.01) + 25).strength(0.8))
+                        .force('x', d3.forceX(width / 2).strength(0.1))
+                        .force('y', d3.forceY(height / 2).strength(0.1));
 
                     const link = g.append('g').attr('class', 'links').selectAll('line').data(links).enter().append('line')
                         .attr('stroke-width', d => Math.max(0.6, linkScale(d.value))).attr('opacity', 0.95)
@@ -735,7 +738,20 @@ document.addEventListener('DOMContentLoaded', function() {
                                 .html(`<div class="chart-wrap"><strong>${d.id}</strong><div>abs(corr with Coffee): ${c.toFixed(3)}</div></div>`);
                         }).on('mouseout', () => tooltip.style('opacity', 0));
 
-                    node.append('text').text(d => d.id).attr('x', 10).attr('y', 4).style('font-size', '11px');
+                    // Add white background for text labels
+                    node.append('text')
+                        .text(d => d.id)
+                        .attr('x', 0)
+                        .attr('y', d => sizeScale(corrWithCoffee[d.id] || 0.01) + 14)
+                        .attr('text-anchor', 'middle')
+                        .style('font-size', '11px')
+                        .style('font-weight', '500')
+                        .style('fill', '#222')
+                        .style('paint-order', 'stroke')
+                        .style('stroke', '#fff')
+                        .style('stroke-width', '3px')
+                        .style('stroke-linecap', 'butt')
+                        .style('stroke-linejoin', 'miter');
 
                     link.append('title').text(d => `corr: ${d.corr.toFixed(2)}`);
 
@@ -748,26 +764,43 @@ document.addEventListener('DOMContentLoaded', function() {
                     feMerge.append('feMergeNode').attr('in', 'offsetBlur');
                     feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
 
-                    // build legend gradient using the same rose interpolator
+                    // build legend gradient using the same rose interpolator - vertical orientation
                     const gradId = 'legend-rose';
-                    const gradient = defs.append('linearGradient').attr('id', gradId).attr('x1', '0%').attr('x2', '100%');
+                    const gradient = defs.append('linearGradient').attr('id', gradId).attr('x1', '0%').attr('x2', '0%').attr('y1', '100%').attr('y2', '0%');
                     const stops = 12;
                     d3.range(0, stops + 1).forEach(i => {
                         gradient.append('stop').attr('offset', `${(i / stops) * 100}%`).attr('stop-color', roseInterp(i / stops));
                     });
 
-                    // draw colorbar legend near the bottom center of this svg
-                    const legendW = 180,
-                        legendH = 12;
-                    const legendX = margin.left + (width - legendW) / 2;
-                    const legendY = margin.top + height - legendH - 6;
+                    // draw vertical colorbar legend in top-left corner
+                    const legendW = 20,
+                        legendH = 120;
+                    const legendX = margin.left + 10;
+                    const legendY = margin.top + 10;
                     const safeMax = Math.max(0.01, maxCorrObserved || 0.01);
                     const legendG = svg.append('g').attr('class', 'legend').attr('transform', `translate(${legendX},${legendY})`);
+                    
+                    // Title above the legend
+                    legendG.append('text')
+                        .attr('x', legendW / 2)
+                        .attr('y', -5)
+                        .attr('text-anchor', 'middle')
+                        .style('font-size', '10px')
+                        .style('font-weight', '600')
+                        .text('Node Color & Size');
+                    
                     legendG.append('rect').attr('width', legendW).attr('height', legendH).attr('fill', `url(#${gradId})`).attr('stroke', '#ccc');
-                    const legendScale = d3.scaleLinear().domain([0, safeMax]).range([0, legendW]);
-                    const legendAxis = d3.axisBottom(legendScale).ticks(4).tickFormat(d3.format('.2f'));
-                    legendG.append('g').attr('transform', `translate(0,${legendH})`).call(legendAxis).selectAll('text').style('font-size', '10px');
-                    legendG.append('text').attr('x', legendW / 2).attr('y', -6).attr('text-anchor', 'middle').attr('class', 'viz-title').text('(Correlation with Coffee_Intake)');
+                    const legendScale = d3.scaleLinear().domain([0, safeMax]).range([legendH, 0]);
+                    const legendAxis = d3.axisRight(legendScale).ticks(5).tickFormat(d3.format('.2f'));
+                    legendG.append('g').attr('transform', `translate(${legendW},0)`).call(legendAxis).selectAll('text').style('font-size', '9px');
+                    
+                    // Label below the legend
+                    legendG.append('text')
+                        .attr('x', legendW / 2)
+                        .attr('y', legendH + 15)
+                        .attr('text-anchor', 'middle')
+                        .style('font-size', '9px')
+                        .text('Corr - Coffee_Intake');
 
                     simulation.on('tick', () => {
                         link.attr('x1', d => d.source.x).attr('y1', d => d.source.y).attr('x2', d => d.target.x).attr('y2', d => d.target.y);
